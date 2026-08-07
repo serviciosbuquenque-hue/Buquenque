@@ -1,46 +1,34 @@
 /**
  * ============================================================
- *  CONFIGURACIÓN CENTRAL: Firebase Realtime Database + Cloudinary
+ *  CONFIGURACIÓN CENTRAL: Backend proxy + Cloudinary
  * ============================================================
  *
- * IMPORTANTE: debes cargar este script ANTES que afiliados.js,
- * notifications.js, message-notification-system.js, payment.js,
- * dynamic-system.js y script.js en tu index.html. También debes
- * cargar el SDK "compat" de Firebase antes que este archivo
- * (ver instrucciones que te di aparte para el <head> de index.html).
+ * El frontend ya no accede directamente a Firebase. En su lugar,
+ * consulta al backend a través de /api/* y el backend hace de proxy.
  * ------------------------------------------------------------
  */
 
-// -----------------------------
-// 1. CONFIGURACIÓN DE FIREBASE
-// -----------------------------
-// Reemplaza estos valores por los que te da la consola de Firebase en:
-// Configuración del proyecto -> Tus apps -> App web -> "Config"
-// Estos datos NO son secretos, es normal que sean públicos en el frontend.
-const firebaseConfig = {
-  apiKey: "AIzaSyCmjcF63Q_0Co1F-W56IT44j00MmPbrjp8",
-  authDomain: "notify-buquenque.firebaseapp.com",
-  databaseURL: "https://notify-buquenque-default-rtdb.firebaseio.com",
-  projectId: "notify-buquenque",
-  storageBucket: "notify-buquenque.firebasestorage.app",
-  messagingSenderId: "1018432787080",
-  appId: "1:1018432787080:web:e50767fb4843df565d053d"
-};
+const CLOUDINARY_CLOUD_NAME = "vgvdzqql";
+const DEFAULT_BACKEND_HOST = "https://backend-mkzu.onrender.com";
 
-// Evitar doble inicialización si el script se llegara a cargar dos veces
-if (!firebase.apps || !firebase.apps.length) {
-  firebase.initializeApp(firebaseConfig);
+function getBackendHost() {
+  if (typeof BACKEND === 'string' && BACKEND.trim()) {
+    return BACKEND.replace(/\/$/, '');
+  }
+
+  if (window.location.protocol.startsWith('http') && window.location.hostname && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
+    return `${window.location.protocol}//${window.location.host}`;
+  }
+
+  return DEFAULT_BACKEND_HOST;
 }
 
-const rtdb = firebase.database();
+const API_BASE = getBackendHost();
 
 // -----------------------------
 // 2. CONFIGURACIÓN DE CLOUDINARY
 // -----------------------------
 // Reemplaza por el "Cloud name" que aparece en tu Dashboard de Cloudinary.
-const CLOUDINARY_CLOUD_NAME = "vgvdzqql";
-
-// Construye la URL pública de una imagen de PRODUCTO alojada en Cloudinary.
 // "filename" es el mismo valor que ya guardabas en el array "imagenes" del producto.
 function getProductImageUrl(filename) {
   if (!filename) return "Images/product-placeholder.svg";
@@ -54,16 +42,29 @@ function getPackImageUrl(filename) {
 }
 
 // -----------------------------
-// 3. HELPERS GENÉRICOS DE LECTURA
+// 3. HELPERS GENERALES MEDIANTE BACKEND PROXY
 // -----------------------------
-async function rtdbGetValue(path) {
-  const snap = await rtdb.ref(path).once("value");
-  return snap.val();
-}
+async function fetchBackendJson(endpoint, options = {}) {
+  const url = endpoint.startsWith('http') ? endpoint : `${API_BASE}${endpoint}`;
+  const response = await fetch(url, {
+    ...options,
+    headers: {
+      'Content-Type': 'application/json',
+      ...options.headers
+    }
+  });
 
-async function rtdbGetObjectAsArray(path) {
-  const val = await rtdbGetValue(path);
-  return val ? Object.values(val) : [];
+  if (!response.ok) {
+    const text = await response.text();
+    throw new Error(`Error en backend ${response.status}: ${text}`);
+  }
+
+  const data = await response.json();
+  if (data && data.success === false) {
+    throw new Error(data.message || `Error en backend: ${endpoint}`);
+  }
+
+  return data;
 }
 
 // -----------------------------
@@ -72,61 +73,58 @@ async function rtdbGetObjectAsArray(path) {
 
 // Antes: fetch('.../products.json') -> { products: [...] }
 async function fetchProductsFromFirebase() {
-  const products = await rtdbGetObjectAsArray("products");
-  return { products };
+  const data = await fetchBackendJson('/api/products');
+  return { products: Array.isArray(data.products) ? data.products : [] };
 }
 
 // Antes: fetch('Json/packs.json') -> { packs: [...] }
 async function fetchPacksFromFirebase() {
-  const packs = await rtdbGetObjectAsArray("packs");
-  return { packs };
+  const data = await fetchBackendJson('/api/packs');
+  return { packs: Array.isArray(data.packs) ? data.packs : [] };
 }
 
 // Antes: fetch('Json/afiliados.json') -> { afiliados: [...] }
 async function fetchAfiliadosFromFirebase() {
-  const afiliados = await rtdbGetObjectAsArray("afiliados");
-  return { afiliados };
+  const data = await fetchBackendJson('/api/afiliados');
+  return { afiliados: Array.isArray(data.afiliados) ? data.afiliados : [] };
 }
 
 // Antes: fetch('Json/data.json') -> objeto único del banner
 async function fetchNotificationBannerFromFirebase() {
-  return await rtdbGetValue("notificationBanner");
+  const data = await fetchBackendJson('/api/notification-banner');
+  return data.banner || null;
 }
 
 // Antes: fetch('Json/mensaje.json') -> array de mensajes
 async function fetchMensajesFromFirebase() {
-  return await rtdbGetObjectAsArray("mensajes");
+  const data = await fetchBackendJson('/api/mensajes');
+  return Array.isArray(data.mensajes) ? data.mensajes : [];
 }
 
 // Antes: fetch('Json/evento.json') -> objeto único del evento
 async function fetchEventoFromFirebase() {
-  return await rtdbGetValue("evento");
+  const data = await fetchBackendJson('/api/evento');
+  return data.evento || null;
 }
 
 // Antes: fetch('Json/info.json') -> array de info de productos
 async function fetchInfoFromFirebase() {
-  return await rtdbGetObjectAsArray("info");
+  const data = await fetchBackendJson('/api/info');
+  return Array.isArray(data.info) ? data.info : [];
 }
 
 // Antes: fetch('Json/pay.json') -> objeto único con países
 async function fetchPayFromFirebase() {
-  return await rtdbGetValue("pay");
+  const data = await fetchBackendJson('/api/pay');
+  return data.pay || null;
 }
 
 // -----------------------------
 // 5. ESCUCHA EN TIEMPO REAL (sin recargar la página)
 // -----------------------------
-// Se suscribe a un path de la base de datos y ejecuta "callback" cada vez que
-// cambia algo ahí (agregar producto, editar precio, cambiar imagen, etc).
-// Ignora el primer disparo porque ese ya lo cubre la carga inicial normal
-// (loadProducts/loadPacks/etc que se llama una vez al abrir la página).
+// No es posible suscribirse directamente a Firebase desde el navegador
+// cuando el frontend usa el backend como proxy. La actualización en vivo
+// debe implementarse con un mecanismo server-sent events o polling.
 function watchFirebasePath(path, callback) {
-  let isFirstSnapshot = true;
-  rtdb.ref(path).on("value", () => {
-    if (isFirstSnapshot) {
-      isFirstSnapshot = false;
-      return;
-    }
-    callback();
-  });
+  console.warn('watchFirebasePath está deshabilitado en modo proxy. El frontend no puede suscribirse directamente a Firebase desde el navegador.');
 }
