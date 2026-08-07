@@ -1,4 +1,4 @@
-const BACKEND = 'https://backend-eje1.onrender.com';
+const BACKEND = 'https://backend-mkzu.onrender.com';
 
 document.addEventListener('DOMContentLoaded', () => {
     initializePaymentSystem();
