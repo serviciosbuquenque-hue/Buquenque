@@ -122,5 +122,86 @@ async function fetchPayFromFirebase() {
 // cuando el frontend usa el backend como proxy. La actualización en vivo
 // debe implementarse con un mecanismo server-sent events o polling.
 function watchFirebasePath(path, callback) {
-  console.warn('watchFirebasePath está deshabilitado en modo proxy. El frontend no puede suscribirse directamente a Firebase desde el navegador.');
+  // Evitar abrir SSE desde el storefront público. Solo habilitar si
+  // window.IS_ADMIN_PANEL === true (panel de gestión interno).
+  if (!window.IS_ADMIN_PANEL) {
+    console.warn('watchFirebasePath: SSE deshabilitado en este contexto (no es panel administrativo).');
+    return () => { /* noop cleanup */ };
+  }
+
+  const pathConfig = {
+    'products': { key: 'products', mode: 'delta' },
+    'packs': { key: 'packs', mode: 'delta' },
+    'notificationBanner': { key: 'notification-banner', mode: 'full' },
+    'afiliados': { key: 'afiliados', mode: 'full' },
+    'mensajes': { key: 'mensajes', mode: 'full' },
+    'evento': { key: 'evento', mode: 'full' },
+    'info': { key: 'info', mode: 'full' },
+    'pay': { key: 'pay', mode: 'full' }
+  };
+
+  const config = pathConfig[path];
+  if (!config) {
+    console.warn('watchFirebasePath: path no soportado para SSE:', path);
+    return () => { /* noop */ };
+  }
+
+  const url = `${API_BASE}/api/stream/${config.key}`;
+  const es = new EventSource(url);
+
+  if (config.mode === 'full') {
+    const onFull = (ev) => {
+      try {
+        const parsed = JSON.parse(ev.data);
+        callback(parsed.value);
+      } catch (e) {
+        console.warn('watchFirebasePath full parse error', e);
+      }
+    };
+    es.addEventListener('full', onFull);
+
+    es.onerror = (err) => {
+      console.warn('watchFirebasePath SSE error (full):', err);
+    };
+
+    return () => { try { es.close(); } catch (e) {} };
+  }
+
+  // delta mode
+  let localMap = {};
+
+  const onUpsert = (ev) => {
+    try {
+      const parsed = JSON.parse(ev.data);
+      const { key, value } = parsed;
+      if (key !== undefined) {
+        localMap[key] = value;
+        callback(Object.values(localMap));
+      }
+    } catch (e) {
+      console.warn('watchFirebasePath child_upsert parse error', e);
+    }
+  };
+
+  const onRemoved = (ev) => {
+    try {
+      const parsed = JSON.parse(ev.data);
+      const { key } = parsed;
+      if (key !== undefined) {
+        delete localMap[key];
+        callback(Object.values(localMap));
+      }
+    } catch (e) {
+      console.warn('watchFirebasePath child_removed parse error', e);
+    }
+  };
+
+  es.addEventListener('child_upsert', onUpsert);
+  es.addEventListener('child_removed', onRemoved);
+
+  es.onerror = (err) => {
+    console.warn('watchFirebasePath SSE error (delta):', err);
+  };
+
+  return () => { try { es.close(); } catch (e) {} };
 }
