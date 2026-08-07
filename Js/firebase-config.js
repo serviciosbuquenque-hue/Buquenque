@@ -2,9 +2,6 @@
  * ============================================================
  *  CONFIGURACIÓN CENTRAL: Firebase Realtime Database + Cloudinary
  * ============================================================
- * Este archivo reemplaza los antiguos fetch() a los .json del
- * repo de GitHub (raw.githubusercontent.com) y a las carpetas
- * Images/products y Images/Packs.
  *
  * IMPORTANTE: debes cargar este script ANTES que afiliados.js,
  * notifications.js, message-notification-system.js, payment.js,

@@ -5,14 +5,14 @@ const locks = new Map();
 
 // Configurable API base para los endpoints del backend.
 // Default: deployment backend en render
-let API_BASE = 'https://backend-eje1.onrender.com';
+let API_BASE = 'https://backend-mkzu.onrender.com';
 (function detectApiBase() {
   try {
     const host = window.location.hostname;
     const port = window.location.port;
 
     // Si la página se sirve desde el propio backend (misma host), usar rutas relativas
-    if (host === 'https://backend-eje1.onrender.com') {
+    if (host === 'https://backend-mkzu.onrender.com') {
       API_BASE = '';
       console.info('[rating] Running on backend host; using relative API endpoints');
       return;
