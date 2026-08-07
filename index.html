@@ -376,7 +376,8 @@
                     <div class="form-group">
                         <label for="phone"><i class="fas fa-mobile-alt"></i>
                             Tu Número de Teléfono (Para confirmar tu pedido)</label>
-                        <input type="text" id="phone" name="phone" inputmode="numeric" pattern="[0-9]*" autocomplete="tel" placeholder="Ej: 12345678901" maxlength="15" required>
+                        <input type="text" id="phone" name="phone" inputmode="numeric" pattern="[0-9]*"
+                            autocomplete="tel" placeholder="Ej: 12345678901" maxlength="15" required>
                     </div>
                     <div class="form-group">
                         <label for="address"><i class="fas fa-map-marker-alt"></i>
@@ -396,8 +397,8 @@
                     <div class="form-group">
                         <label for="delivery-phone"><i class="fas fa-phone-alt"></i>
                             Teléfono de Persona que Recibe</label>
-                        <input type="text" id="delivery-phone" name="delivery-phone" inputmode="numeric" pattern="[0-9]*" autocomplete="tel" placeholder="Ej: 12345678901" maxlength="15"
-                            required>
+                        <input type="text" id="delivery-phone" name="delivery-phone" inputmode="numeric"
+                            pattern="[0-9]*" autocomplete="tel" placeholder="Ej: 12345678901" maxlength="15" required>
                     </div>
                 </div>
 
@@ -493,7 +494,8 @@
 
             <div class="confirmation-main">
                 <h2>¡Pedido Confirmado!</h2>
-                <p class="confirmation-order-number" id="confirmation-order-number" style="display:none; font-weight:700; margin: 0 0 12px;">Número de orden: BS-01</p>
+                <p class="confirmation-order-number" id="confirmation-order-number"
+                    style="display:none; font-weight:700; margin: 0 0 12px;">Número de orden: BS-01</p>
                 <p class="confirmation-message">Gracias por tu compra en
                     Buquenque Shop. Estamos procesando tu pedido y nos
                     pondremos en contacto contigo pronto.</p>
@@ -549,6 +551,9 @@
     </div>
 
     <!-- Configuración de backend proxy + Cloudinary -->
+    <script>
+        window.IS_ADMIN_PANEL = true;
+    </script>
     <script src="Js/firebase-config.js"></script>
 
     <script src="Js/notifications.js"></script>
