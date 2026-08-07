@@ -16,10 +16,6 @@ function getBackendHost() {
     return BACKEND.replace(/\/$/, '');
   }
 
-  if (window.location.protocol.startsWith('http') && window.location.hostname && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
-    return `${window.location.protocol}//${window.location.host}`;
-  }
-
   return DEFAULT_BACKEND_HOST;
 }
 
