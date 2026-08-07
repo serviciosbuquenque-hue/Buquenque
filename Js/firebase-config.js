@@ -28,13 +28,13 @@ const API_BASE = getBackendHost();
 // "filename" es el mismo valor que ya guardabas en el array "imagenes" del producto.
 function getProductImageUrl(filename) {
   if (!filename) return "Images/product-placeholder.svg";
-  return `https://res.cloudinary.com/${CLOUDINARY_CLOUD_NAME}/image/upload/f_webp,q_auto/${encodeURIComponent(filename)}`;
+  return `https://res.cloudinary.com/${CLOUDINARY_CLOUD_NAME}/image/upload/f_webp,q_auto/products/${filename}`;
 }
 
 // Construye la URL pública de una imagen de PACK alojada en Cloudinary.
 function getPackImageUrl(filename) {
   if (!filename) return "Images/pack-placeholder.svg";
-  return `https://res.cloudinary.com/${CLOUDINARY_CLOUD_NAME}/image/upload/f_webp,q_auto/${encodeURIComponent(filename)}`;
+  return `https://res.cloudinary.com/${CLOUDINARY_CLOUD_NAME}/image/upload/f_webp,q_auto/packs/${filename}`;
 }
 
 // -----------------------------
